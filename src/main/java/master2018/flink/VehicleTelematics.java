@@ -24,9 +24,10 @@ public class VehicleTelematics {
                 String[] arr = value.split(",");
                 return new CarRecord(arr);
             }
-        });
+        }).setParallelism(1);
 
         new SpeedStream(carRecordDataStream,90.0f, outputFile1);
+        //new AvgSpeedStream(carRecordDataStream,60.0f, outputFile2);
         new AccidentStream(carRecordDataStream, outputFile3);
 
         try {

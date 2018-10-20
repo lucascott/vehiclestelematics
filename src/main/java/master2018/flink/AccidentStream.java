@@ -29,13 +29,25 @@ public class AccidentStream implements Serializable {
         }).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, String, GlobalWindow>() {
             @Override
             public void apply(String s, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) throws Exception {
-                String str ="";
+                short count = 0;
+                CarRecord first = null;
+                CarRecord last = null;
                 for (CarRecord cr:input
                      ) {
-                    str += cr.toString() + "\n";
+                    count++;
+                    if (count == 1){
+                        first = cr;
+                    }
+                    if (count == 4){
+                        last = cr;
+                    }
+                    if (cr.pos != first.pos){
+                        break;
+                    }
                 }
-                str += "##########";
-                out.collect(new AccidentRecord(str));
+                if(count == 4) {
+                    out.collect(new AccidentRecord(first.time, last.time, first.vid, first.xway, first.seg, first.dir, first.pos));
+                }
             }
         });
 
@@ -43,15 +55,34 @@ public class AccidentStream implements Serializable {
     }
 
     private class AccidentRecord {
-        String s;
 
-        public AccidentRecord(String str) {
-            this.s = str;
+        private final int timeBegin;
+        private final int timeEnd;
+        private final String vid;
+        private final String xway;
+        private final short seg;
+        private final short dir;
+        private final int pos;
+
+        public AccidentRecord(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
+            this.timeBegin = timeBegin;
+            this.timeEnd = timeEnd;
+            this.vid = vid;
+            this.xway = xway;
+            this.seg = seg;
+            this.dir = dir;
+            this.pos = pos;
         }
 
         @Override
         public String toString() {
-            return s;
+            return timeBegin +
+                    "," + timeEnd +
+                    "," + vid +
+                    "," + xway +
+                    "," + seg +
+                    "," + dir +
+                    "," + pos;
         }
     }
 }
