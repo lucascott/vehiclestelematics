@@ -1,3 +1,5 @@
 .idea/workspace.xml
 target/
-
+src/main/resources/accidents.csv
+src/main/resources/speedfines.csv
+src/main/resources/avgspeedfines.csv
