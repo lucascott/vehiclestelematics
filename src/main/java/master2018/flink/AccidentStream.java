@@ -1,6 +1,6 @@
 package master2018.flink;
 
-import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
@@ -21,19 +21,13 @@ public class AccidentStream implements Serializable {
     }
 
     private void run() {
-        DataStream<AccidentRecord> out = in.keyBy(new KeySelector<CarRecord, String>() {
+        DataStream<AccidentRecord> out = in.keyBy("vid","xway","dir").countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
             @Override
-            public String getKey(CarRecord value) throws Exception {
-                return value.vid;
-            }
-        }).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, String, GlobalWindow>() {
-            @Override
-            public void apply(String s, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) throws Exception {
+            public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) throws Exception {
                 short count = 0;
                 CarRecord first = null;
                 CarRecord last = null;
-                for (CarRecord cr:input
-                     ) {
+                for (CarRecord cr:input) {
                     count++;
                     if (count == 1){
                         first = cr;
@@ -64,7 +58,7 @@ public class AccidentStream implements Serializable {
         private final short dir;
         private final int pos;
 
-        public AccidentRecord(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
+        AccidentRecord(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
             this.timeBegin = timeBegin;
             this.timeEnd = timeEnd;
             this.vid = vid;

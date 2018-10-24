@@ -10,9 +10,9 @@ import java.io.Serializable;
 public class SpeedStream implements Serializable {
     private final transient DataStream<CarRecord> in;
     private final String outputFilePath;
-    private final float speedLimit;
+    private final int speedLimit;
 
-    public SpeedStream(DataStream<CarRecord> carRecordDataStream, float speedLimit, String outputFile1) {
+    public SpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, String outputFile1) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile1;
         this.speedLimit = speedLimit;
@@ -42,7 +42,7 @@ public class SpeedStream implements Serializable {
         private final String xway;
         private final short seg;
         private final short dir;
-        private final float spd;
+        private final short spd;
 
         public SpeedRecord(CarRecord value) {
             // Format: Time, VID, XWay, Seg, Dir, Spd
