@@ -1,32 +1,30 @@
 package master2018.flink;
 
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.functions.TimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
-import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
-import org.apache.flink.streaming.util.keys.KeySelectorUtil;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
 
-public class AvgSpeedStream implements Serializable {
-    private final transient DataStream<CarRecord> in;
-    private final String outputFilePath;
-    private final float speedLimit;
-    private final short segBegin = 53;
-    private final short segEnd = 56;
+import static java.lang.Math.abs;
 
-    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, float speedLimit, String outputFile2) {
+public class AvgSpeedStream implements Serializable {
+    private transient DataStream<CarRecord> in;
+    private String outputFilePath;
+
+    private int speedLimit;
+
+    private short segBegin = 52;
+    private short segEnd = 56;
+
+    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, String outputFile2) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile2;
         this.speedLimit = speedLimit;
@@ -34,49 +32,101 @@ public class AvgSpeedStream implements Serializable {
         this.run();
     }
 
+    public AvgSpeedStream() {
+
+    }
+
     private void run() {
-        SingleOutputStreamOperator<AvgSpeedRecord> out = in.keyBy(new KeySelector<CarRecord, Tuple3<String,String,Short>>() {
+        DataStream<AvgSpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
-            public Tuple3<String,String,Short> getKey(CarRecord value) throws Exception {
-                return Tuple3.of(value.vid, value.xway, value.dir);
+            public boolean filter(CarRecord value) throws Exception {
+                return value.seg >= segBegin && value.seg <= segEnd;
             }
-        }).window(GlobalWindows.create())
-                .apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple3<String, String, Short>, GlobalWindow>() {
+        }).assignTimestamps(new TimestampExtractor<CarRecord>() {
             @Override
-            public void apply(Tuple3<String, String, Short> stringStringShortTuple3, GlobalWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) throws Exception {
-                // TODO: CODE HERE
+            public long extractTimestamp(CarRecord element, long currentTimestamp) {
+                return element.time;
+            }
+
+            @Override
+            public long extractWatermark(CarRecord element, long currentTimestamp) {
+                return 0;
+            }
+
+            @Override
+            public long getCurrentWatermark() {
+                return 0;
+            }
+        }).keyBy("vid", "xway", "dir").window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
+            @Override
+            public void apply(Tuple tuple, TimeWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) throws Exception {
+                CarRecord first = input.iterator().next();
+                CarRecord last = input.iterator().next();
+                for (CarRecord cr : input){
+                    if (cr.pos < first.pos){
+                        first = cr;
+                    }
+                    if (cr.pos > last.pos){
+                        last = cr;
+                    }
+                }
+                int finalSpeed = calculateSpeed(first,last);
+                if (first.seg == segBegin && last.seg == segEnd && finalSpeed > speedLimit){
+                    out.collect(new AvgSpeedRecord(first, last, finalSpeed));
+                }
             }
         });
 
         out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
+    private int calculateSpeed(CarRecord first, CarRecord last) {
+        return (int) ((abs(first.pos - last.pos) / 1609.344) / (abs(first.time - last.time)/3600.));
+    }
+
     private class AvgSpeedRecord {
-        private final int time;
+        private final int time1;
+        private final int time2;
         private final String vid;
         private final String xway;
-        private final short seg;
         private final short dir;
-        private final float spd;
+        private final short avgSpd;
 
-        public AvgSpeedRecord(CarRecord value) {
-            // Format: Time, VID, XWay, Seg, Dir, Spd
-            this.time = value.time;
-            this.vid = value.vid;
-            this.xway = value.xway;
-            this.seg = value.seg;
-            this.dir = value.dir;
-            this.spd = value.spd;
+        public AvgSpeedRecord(CarRecord first, CarRecord last, int finalSpd) {
+            // Format: Time1, Time2, VID, XWay, Dir, AvgSpd,
+            this.vid = first.vid;
+            this.xway = first.xway;
+            this.dir = first.dir;
+            this.avgSpd = (short) finalSpd;
+            if (first.dir == 0){
+                time1 = first.time;
+                time2 = last.time;
+            }
+            else{
+                time1 = last.time;
+                time2 = first.time;
+            }
         }
 
         @Override
         public String toString() {
-            return time +
+            return time1 +
+                    "," + time2 +
                     "," + vid +
                     "," + xway +
-                    "," + seg +
                     "," + dir +
-                    "," + spd;
+                    "," + avgSpd;
         }
+    }
+
+    public static void main(String[] args) {
+        AvgSpeedStream a = new AvgSpeedStream();
+        CarRecord c = new CarRecord();
+        c.time = 0;
+        c.pos = 0;
+        CarRecord c1 = new CarRecord();
+        c1.time = 3600;
+        c1.pos = 96561;
+        System.out.println(a.calculateSpeed(c, c1));
     }
 }
