@@ -48,7 +48,7 @@ public class AccidentStream implements Serializable {
         out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
-    private class AccidentRecord {
+    private class AccidentRecord implements java.io.Serializable{
 
         private final int timeBegin;
         private final int timeEnd;

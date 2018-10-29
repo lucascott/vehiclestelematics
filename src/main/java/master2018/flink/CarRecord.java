@@ -1,6 +1,6 @@
 package master2018.flink;
 
-public class CarRecord {
+public class CarRecord implements java.io.Serializable{
     int time;
     String vid;
     short spd;

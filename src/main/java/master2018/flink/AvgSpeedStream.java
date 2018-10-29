@@ -21,13 +21,15 @@ public class AvgSpeedStream implements Serializable {
 
     private int speedLimit;
 
-    private short segBegin = 52;
-    private short segEnd = 56;
+    private int segBegin;
+    private int segEnd;
 
-    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, String outputFile2) {
+    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, int segBegin, int segEnd, String outputFile2) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile2;
         this.speedLimit = speedLimit;
+        this.segBegin = segBegin;
+        this.segEnd = segEnd;
 
         this.run();
     }
@@ -84,7 +86,7 @@ public class AvgSpeedStream implements Serializable {
         return (int) ((abs(first.pos - last.pos) / 1609.344) / (abs(first.time - last.time)/3600.));
     }
 
-    private class AvgSpeedRecord {
+    private class AvgSpeedRecord implements java.io.Serializable{
         private final int time1;
         private final int time2;
         private final String vid;

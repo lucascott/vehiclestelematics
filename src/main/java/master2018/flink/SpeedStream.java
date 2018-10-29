@@ -36,7 +36,7 @@ public class SpeedStream implements Serializable {
         out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
-    private class SpeedRecord {
+    private class SpeedRecord  implements java.io.Serializable{
         private final int time;
         private final String vid;
         private final String xway;
