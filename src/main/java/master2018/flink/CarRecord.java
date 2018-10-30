@@ -24,6 +24,17 @@ public class CarRecord implements java.io.Serializable{
         this.pos = Integer.parseInt(arr[7]);
     }
 
+    public void load(String[] arr) {
+        this.time = Integer.parseInt(arr[0]);
+        this.vid = arr[1];
+        this.spd = Short.parseShort(arr[2]);
+        this.xway = arr[3];
+        this.lane = Short.parseShort(arr[4]);
+        this.dir = Short.parseShort(arr[5]);
+        this.seg = Short.parseShort(arr[6]);
+        this.pos = Integer.parseInt(arr[7]);
+    }
+
     @Override
     public String toString() {
         return "CarRecord{" +

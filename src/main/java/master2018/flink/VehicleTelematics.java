@@ -22,10 +22,12 @@ public class VehicleTelematics {
 
         DataStreamSource<String> input = env.readTextFile(inputPath).setParallelism(1);
         DataStream<CarRecord> carRecordDataStream = input.map(new MapFunction<String, CarRecord>() {
+            CarRecord carRecord = new CarRecord();
             @Override
             public CarRecord map(String value) throws Exception {
                 String[] arr = value.split(",");
-                return new CarRecord(arr);
+                carRecord.load(arr);
+                return carRecord;
             }
         }).setParallelism(1);
 

@@ -27,24 +27,40 @@ public class SpeedStream implements Serializable {
                 return value.spd > speedLimit;
             }
         }).map(new MapFunction<CarRecord, SpeedRecord>() {
+            SpeedRecord speedRecord = new SpeedRecord();
             @Override
             public SpeedRecord map(CarRecord value) throws Exception {
-                return new SpeedRecord(value);
+                speedRecord.load(value);
+                return speedRecord;
             }
         });
 
         out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
-    private class SpeedRecord  implements java.io.Serializable{
-        private final int time;
-        private final String vid;
-        private final String xway;
-        private final short seg;
-        private final short dir;
-        private final short spd;
+    private class SpeedRecord implements java.io.Serializable {
+        private int time;
+        private String vid;
+        private String xway;
+        private short seg;
+        private short dir;
+        private short spd;
 
         public SpeedRecord(CarRecord value) {
+            // Format: Time, VID, XWay, Seg, Dir, Spd
+            this.time = value.time;
+            this.vid = value.vid;
+            this.xway = value.xway;
+            this.seg = value.seg;
+            this.dir = value.dir;
+            this.spd = value.spd;
+        }
+
+        public SpeedRecord() {
+
+        }
+
+        public void load(CarRecord value) {
             // Format: Time, VID, XWay, Seg, Dir, Spd
             this.time = value.time;
             this.vid = value.vid;

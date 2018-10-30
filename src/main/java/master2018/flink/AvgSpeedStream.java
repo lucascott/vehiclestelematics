@@ -60,6 +60,8 @@ public class AvgSpeedStream implements Serializable {
                 return 0;
             }
         }).keyBy("vid", "xway", "dir").window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
+            AvgSpeedRecord avgSpeedRecord = new AvgSpeedRecord();
+
             @Override
             public void apply(Tuple tuple, TimeWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) throws Exception {
                 CarRecord first = input.iterator().next();
@@ -74,7 +76,8 @@ public class AvgSpeedStream implements Serializable {
                 }
                 int finalSpeed = calculateSpeed(first,last);
                 if (first.seg == segBegin && last.seg == segEnd && finalSpeed > speedLimit){
-                    out.collect(new AvgSpeedRecord(first, last, finalSpeed));
+                    avgSpeedRecord.load(first, last, finalSpeed);
+                    out.collect(avgSpeedRecord);
                 }
             }
         });
@@ -86,15 +89,35 @@ public class AvgSpeedStream implements Serializable {
         return (int) ((abs(first.pos - last.pos) / 1609.344) / (abs(first.time - last.time)/3600.));
     }
 
-    private class AvgSpeedRecord implements java.io.Serializable{
-        private final int time1;
-        private final int time2;
-        private final String vid;
-        private final String xway;
-        private final short dir;
-        private final short avgSpd;
+    private class AvgSpeedRecord implements java.io.Serializable {
+        private int time1;
+        private int time2;
+        private String vid;
+        private String xway;
+        private short dir;
+        private short avgSpd;
 
         public AvgSpeedRecord(CarRecord first, CarRecord last, int finalSpd) {
+            // Format: Time1, Time2, VID, XWay, Dir, AvgSpd,
+            this.vid = first.vid;
+            this.xway = first.xway;
+            this.dir = first.dir;
+            this.avgSpd = (short) finalSpd;
+            if (first.dir == 0){
+                time1 = first.time;
+                time2 = last.time;
+            }
+            else{
+                time1 = last.time;
+                time2 = first.time;
+            }
+        }
+
+        public AvgSpeedRecord() {
+
+        }
+
+        public void load(CarRecord first, CarRecord last, int finalSpd) {
             // Format: Time1, Time2, VID, XWay, Dir, AvgSpd,
             this.vid = first.vid;
             this.xway = first.xway;

@@ -22,6 +22,7 @@ public class AccidentStream implements Serializable {
 
     private void run() {
         DataStream<AccidentRecord> out = in.keyBy("vid","xway","dir").countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
+            AccidentRecord accidentRecord = new AccidentRecord();
             @Override
             public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) throws Exception {
                 short count = 0;
@@ -40,7 +41,8 @@ public class AccidentStream implements Serializable {
                     }
                 }
                 if(count == 4) {
-                    out.collect(new AccidentRecord(first.time, last.time, first.vid, first.xway, first.seg, first.dir, first.pos));
+                    accidentRecord.load(first.time, last.time, first.vid, first.xway, first.seg, first.dir, first.pos);
+                    out.collect(accidentRecord);
                 }
             }
         });
@@ -48,17 +50,31 @@ public class AccidentStream implements Serializable {
         out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
-    private class AccidentRecord implements java.io.Serializable{
+    private class AccidentRecord implements java.io.Serializable {
 
-        private final int timeBegin;
-        private final int timeEnd;
-        private final String vid;
-        private final String xway;
-        private final short seg;
-        private final short dir;
-        private final int pos;
+        private int timeBegin;
+        private int timeEnd;
+        private String vid;
+        private String xway;
+        private short seg;
+        private short dir;
+        private int pos;
 
-        AccidentRecord(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
+        public AccidentRecord(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
+            this.timeBegin = timeBegin;
+            this.timeEnd = timeEnd;
+            this.vid = vid;
+            this.xway = xway;
+            this.seg = seg;
+            this.dir = dir;
+            this.pos = pos;
+        }
+
+        public AccidentRecord() {
+
+        }
+
+        public void load(int timeBegin, int timeEnd, String vid, String xway, short seg, short dir, int pos) {
             this.timeBegin = timeBegin;
             this.timeEnd = timeEnd;
             this.vid = vid;
