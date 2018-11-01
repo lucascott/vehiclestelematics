@@ -2,10 +2,10 @@ package master2018.flink;
 
 import org.apache.flink.api.java.tuple.Tuple7;
 
-public class AccidentRecord extends Tuple7<Integer,Integer,Integer,Integer,Short,Short,Integer> {
+public class AccidentRecord extends Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer> {
 
     public AccidentRecord(int timeBegin, int timeEnd, int vid, int xway, short seg, short dir, int pos) {
-        super(timeBegin,timeEnd,vid,xway,seg,dir,pos);
+        super(timeBegin, timeEnd, vid, xway, seg, dir, pos);
     }
 
     public AccidentRecord() {
