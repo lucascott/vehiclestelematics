@@ -2,10 +2,9 @@ package master2018.flink;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.functions.TimestampExtractor;
+import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -25,7 +24,7 @@ public class AvgSpeedStream implements Serializable {
     private int segBegin;
     private int segEnd;
 
-    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, int segBegin, int segEnd, String outputFile2) {
+    AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, int segBegin, int segEnd, String outputFile2) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile2;
         this.speedLimit = speedLimit;
@@ -42,29 +41,19 @@ public class AvgSpeedStream implements Serializable {
     private void run() {
         DataStream<AvgSpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
-            public boolean filter(CarRecord value) throws Exception {
+            public boolean filter(CarRecord value) {
                 return value.getSeg() >= segBegin && value.getSeg() <= segEnd;
             }
-        }).assignTimestamps(new TimestampExtractor<CarRecord>() {
+        }).assignTimestampsAndWatermarks(new AscendingTimestampExtractor<CarRecord>() {
             @Override
-            public long extractTimestamp(CarRecord element, long currentTimestamp) {
+            public long extractAscendingTimestamp(CarRecord element) {
                 return element.getTime();
-            }
-
-            @Override
-            public long extractWatermark(CarRecord element, long currentTimestamp) {
-                return 0;
-            }
-
-            @Override
-            public long getCurrentWatermark() {
-                return 0;
             }
         }).keyBy(1,3,4).window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
             AvgSpeedRecord avgSpeedRecord = new AvgSpeedRecord();
 
             @Override
-            public void apply(Tuple tuple, TimeWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) throws Exception {
+            public void apply(Tuple tuple, TimeWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) {
                 CarRecord first = input.iterator().next();
                 CarRecord last = input.iterator().next();
                 for (CarRecord cr : input){
