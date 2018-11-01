@@ -24,7 +24,7 @@ public class SpeedStream implements Serializable {
         DataStream<SpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
             public boolean filter(CarRecord value) throws Exception {
-                return value.spd > speedLimit;
+                return value.getSpd() > speedLimit;
             }
         }).map(new MapFunction<CarRecord, SpeedRecord>() {
             SpeedRecord speedRecord = new SpeedRecord();
@@ -35,49 +35,6 @@ public class SpeedStream implements Serializable {
             }
         });
 
-        out.writeAsText(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-    }
-
-    private class SpeedRecord implements java.io.Serializable {
-        private int time;
-        private String vid;
-        private String xway;
-        private short seg;
-        private short dir;
-        private short spd;
-
-        public SpeedRecord(CarRecord value) {
-            // Format: Time, VID, XWay, Seg, Dir, Spd
-            this.time = value.time;
-            this.vid = value.vid;
-            this.xway = value.xway;
-            this.seg = value.seg;
-            this.dir = value.dir;
-            this.spd = value.spd;
-        }
-
-        public SpeedRecord() {
-
-        }
-
-        public void load(CarRecord value) {
-            // Format: Time, VID, XWay, Seg, Dir, Spd
-            this.time = value.time;
-            this.vid = value.vid;
-            this.xway = value.xway;
-            this.seg = value.seg;
-            this.dir = value.dir;
-            this.spd = value.spd;
-        }
-
-        @Override
-        public String toString() {
-            return time +
-                    "," + vid +
-                    "," + xway +
-                    "," + seg +
-                    "," + dir +
-                    "," + spd;
-        }
+        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 }
