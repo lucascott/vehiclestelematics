@@ -21,28 +21,23 @@ public class AccidentStream implements Serializable {
     }
 
     private void run() {
-        DataStream<AccidentRecord> out = in.keyBy(1,3,4).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
+        DataStream<AccidentRecord> out = in.keyBy(1, 3, 4, 6).countWindow(4, 1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
             AccidentRecord accidentRecord = new AccidentRecord();
+
             @Override
-            public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) throws Exception {
+            public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) {
                 short count = 0;
                 CarRecord first = null;
                 CarRecord last = null;
-                for (CarRecord cr:input) {
+                for (CarRecord cr : input) {
                     count++;
-                    if (count == 1){
+                    if (count == 1) {
                         first = cr;
                     }
-                    if (count == 4){
-                        last = cr;
+                    if (count == 4) {
+                        accidentRecord.load(first.getTime(), cr.getTime(), first.getVid(), first.getXway(), first.getSeg(), first.getDir(), first.getPos());
+                        out.collect(accidentRecord);
                     }
-                    if (cr.getPos() != first.getPos()){
-                        break;
-                    }
-                }
-                if(count == 4) {
-                    accidentRecord.load(first.getTime(), last.getTime(), first.getVid(), first.getXway(), first.getSeg(), first.getDir(), first.getPos());
-                    out.collect(accidentRecord);
                 }
             }
         });

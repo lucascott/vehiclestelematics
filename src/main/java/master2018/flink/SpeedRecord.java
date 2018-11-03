@@ -3,7 +3,7 @@ package master2018.flink;
 
 import org.apache.flink.api.java.tuple.Tuple6;
 
-public class SpeedRecord extends Tuple6<Integer,Integer,Integer,Short,Short,Short> {
+public class SpeedRecord extends Tuple6<Integer, Integer, Integer, Short, Short, Short> {
 
     public SpeedRecord() {
 

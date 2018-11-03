@@ -2,7 +2,7 @@ package master2018.flink;
 
 import org.apache.flink.api.java.tuple.Tuple6;
 
-public class AvgSpeedRecord extends Tuple6<Integer,Integer,Integer,Integer,Short,Short> {
+public class AvgSpeedRecord extends Tuple6<Integer, Integer, Integer, Integer, Short, Short> {
 
     public AvgSpeedRecord() {
     }
@@ -13,11 +13,10 @@ public class AvgSpeedRecord extends Tuple6<Integer,Integer,Integer,Integer,Short
         this.setXway(first.getXway());
         this.setDir(first.getDir());
         this.setAvgSpd((short) finalSpd);
-        if (first.getDir() == 0){
+        if (first.getDir() == 0) {
             this.setTime1(first.getTime());
             this.setTime2(last.getTime());
-        }
-        else{
+        } else {
             this.setTime1(last.getTime());
             this.setTime2(first.getTime());
         }

@@ -23,13 +23,14 @@ public class SpeedStream implements Serializable {
     private void run() {
         DataStream<SpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
-            public boolean filter(CarRecord value) throws Exception {
+            public boolean filter(CarRecord value) {
                 return value.getSpd() > speedLimit;
             }
         }).map(new MapFunction<CarRecord, SpeedRecord>() {
             SpeedRecord speedRecord = new SpeedRecord();
+
             @Override
-            public SpeedRecord map(CarRecord value) throws Exception {
+            public SpeedRecord map(CarRecord value) {
                 speedRecord.load(value);
                 return speedRecord;
             }

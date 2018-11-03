@@ -23,16 +23,17 @@ public class VehicleTelematics {
         DataStreamSource<String> input = env.readTextFile(inputPath).setParallelism(1);
         DataStream<CarRecord> carRecordDataStream = input.map(new MapFunction<String, CarRecord>() {
             CarRecord carRecord = new CarRecord();
+
             @Override
-            public CarRecord map(String value) throws Exception {
+            public CarRecord map(String value) {
                 String[] arr = value.split(",");
                 carRecord.load(arr);
                 return carRecord;
             }
         }).setParallelism(1);
 
-        new SpeedStream(carRecordDataStream,90, outputFile1);
-        new AvgSpeedStream(carRecordDataStream,60, 52, 56, outputFile2);
+        new SpeedStream(carRecordDataStream, 90, outputFile1);
+        new AvgSpeedStream(carRecordDataStream, 60, 52, 56, outputFile2);
         new AccidentStream(carRecordDataStream, outputFile3);
 
         try {

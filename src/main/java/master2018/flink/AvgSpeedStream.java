@@ -24,7 +24,7 @@ public class AvgSpeedStream implements Serializable {
     private int segBegin;
     private int segEnd;
 
-    AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, int segBegin, int segEnd, String outputFile2) {
+    public AvgSpeedStream(DataStream<CarRecord> carRecordDataStream, int speedLimit, int segBegin, int segEnd, String outputFile2) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile2;
         this.speedLimit = speedLimit;
@@ -49,23 +49,23 @@ public class AvgSpeedStream implements Serializable {
             public long extractAscendingTimestamp(CarRecord element) {
                 return element.getTime();
             }
-        }).keyBy(1,3,4).window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
+        }).keyBy(1, 3, 4).window(EventTimeSessionWindows.withGap(Time.seconds(31))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
             AvgSpeedRecord avgSpeedRecord = new AvgSpeedRecord();
 
             @Override
             public void apply(Tuple tuple, TimeWindow window, Iterable<CarRecord> input, Collector<AvgSpeedRecord> out) {
                 CarRecord first = input.iterator().next();
                 CarRecord last = input.iterator().next();
-                for (CarRecord cr : input){
-                    if (cr.getPos() < first.getPos()){
+                for (CarRecord cr : input) {
+                    if (cr.getPos() < first.getPos()) {
                         first = cr;
                     }
-                    if (cr.getPos() > last.getPos()){
+                    if (cr.getPos() > last.getPos()) {
                         last = cr;
                     }
                 }
-                int finalSpeed = calculateSpeed(first,last);
-                if (first.getSeg() == segBegin && last.getSeg() == segEnd && finalSpeed > speedLimit){
+                int finalSpeed = calculateSpeed(first, last);
+                if (first.getSeg() == segBegin && last.getSeg() == segEnd && finalSpeed > speedLimit) {
                     avgSpeedRecord.load(first, last, finalSpeed);
                     out.collect(avgSpeedRecord);
                 }
@@ -76,7 +76,7 @@ public class AvgSpeedStream implements Serializable {
     }
 
     private int calculateSpeed(CarRecord first, CarRecord last) {
-        return (int) ((abs(first.getPos() - last.getPos()) / 1609.344) / (abs(first.getTime() - last.getTime())/3600.));
+        return (int) (abs(last.getPos() - first.getPos()) * 1f / abs(last.getTime() - first.getTime()) * 2.236936292);
     }
 
 }
