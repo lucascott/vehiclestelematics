@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 
 import java.io.Serializable;
 
@@ -21,7 +22,7 @@ public class SpeedStream implements Serializable {
     }
 
     private void run() {
-        DataStream<SpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
+        SingleOutputStreamOperator<SpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
             public boolean filter(CarRecord value) {
                 return value.getSpd() > speedLimit;
