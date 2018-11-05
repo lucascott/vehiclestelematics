@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
@@ -39,7 +40,7 @@ public class AvgSpeedStream implements Serializable {
     }
 
     private void run() {
-        DataStream<AvgSpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
+        SingleOutputStreamOperator<AvgSpeedRecord> out = in.filter(new FilterFunction<CarRecord>() {
             @Override
             public boolean filter(CarRecord value) {
                 return value.getSeg() >= segBegin && value.getSeg() <= segEnd;
@@ -64,9 +65,9 @@ public class AvgSpeedStream implements Serializable {
                         last = cr;
                     }
                 }
-                int finalSpeed = calculateSpeed(first, last);
+                double finalSpeed = calculateSpeed(first, last);
                 if (first.getSeg() == segBegin && last.getSeg() == segEnd && finalSpeed > speedLimit) {
-                    avgSpeedRecord.load(first, last, finalSpeed);
+                    avgSpeedRecord.load(first, last, (int) finalSpeed);
                     out.collect(avgSpeedRecord);
                 }
             }
@@ -75,8 +76,9 @@ public class AvgSpeedStream implements Serializable {
         out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
     }
 
-    private int calculateSpeed(CarRecord first, CarRecord last) {
-        return (int) (abs(last.getPos() - first.getPos()) * 1f / abs(last.getTime() - first.getTime()) * 2.236936292);
+    private double calculateSpeed(CarRecord first, CarRecord last) {
+        double convFactor = 2.236936292054402;
+        return (abs(last.getPos() - first.getPos()) * 1f / abs(last.getTime() - first.getTime()) * convFactor);
     }
 
 }

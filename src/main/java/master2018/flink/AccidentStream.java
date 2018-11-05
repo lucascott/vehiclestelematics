@@ -3,6 +3,7 @@ package master2018.flink;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
@@ -21,7 +22,7 @@ public class AccidentStream implements Serializable {
     }
 
     private void run() {
-        DataStream<AccidentRecord> out = in.keyBy(1, 3, 4, 6).countWindow(4, 1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
+        SingleOutputStreamOperator<AccidentRecord> out = in.keyBy(1,3,4).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
             AccidentRecord accidentRecord = new AccidentRecord();
 
             @Override
