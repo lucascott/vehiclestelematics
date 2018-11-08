@@ -48,7 +48,7 @@ public class AvgSpeedStream implements Serializable {
         }).assignTimestampsAndWatermarks(new AscendingTimestampExtractor<CarRecord>() {
             @Override
             public long extractAscendingTimestamp(CarRecord element) {
-                return element.getTime();
+                return element.getTime() * 1000;
             }
         }).keyBy(1, 3, 4).window(EventTimeSessionWindows.withGap(Time.seconds(31))).apply(new WindowFunction<CarRecord, AvgSpeedRecord, Tuple, TimeWindow>() {
             AvgSpeedRecord avgSpeedRecord = new AvgSpeedRecord();
@@ -67,7 +67,7 @@ public class AvgSpeedStream implements Serializable {
                 }
                 double finalSpeed = calculateSpeed(first, last);
                 if (first.getSeg() == segBegin && last.getSeg() == segEnd && finalSpeed > speedLimit) {
-                    avgSpeedRecord.load(first, last, (int) finalSpeed);
+                    avgSpeedRecord.load(first, last, finalSpeed);
                     out.collect(avgSpeedRecord);
                 }
             }
