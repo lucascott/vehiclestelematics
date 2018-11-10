@@ -1,5 +1,7 @@
 package master2018.flink;
 
+import master2018.flink.records.CarRecord;
+import master2018.flink.records.SpeedRecord;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.core.fs.FileSystem;
@@ -37,6 +39,6 @@ public class SpeedStream implements Serializable {
             }
         });
 
-        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1).name("Speed Stream");
     }
 }

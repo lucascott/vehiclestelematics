@@ -1,5 +1,7 @@
 package master2018.flink;
 
+import master2018.flink.records.AvgSpeedRecord;
+import master2018.flink.records.CarRecord;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
@@ -73,12 +75,12 @@ public class AvgSpeedStream implements Serializable {
             }
         });
 
-        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1).name("AvgSpeed Stream");
     }
 
     private double calculateSpeed(CarRecord first, CarRecord last) {
         double convFactor = 2.236936292054402;
-        return (abs(last.getPos() - first.getPos()) * 1f / abs(last.getTime() - first.getTime()) * convFactor);
+        return (last.getPos() - first.getPos()) * 1.0 / abs(last.getTime() - first.getTime()) * convFactor;
     }
 
 }

@@ -1,5 +1,6 @@
 package master2018.flink;
 
+import master2018.flink.records.CarRecord;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;

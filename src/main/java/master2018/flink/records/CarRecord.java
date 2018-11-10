@@ -1,4 +1,4 @@
-package master2018.flink;
+package master2018.flink.records;
 
 import org.apache.flink.api.java.tuple.Tuple7;
 

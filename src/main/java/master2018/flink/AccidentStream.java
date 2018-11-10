@@ -1,5 +1,7 @@
 package master2018.flink;
 
+import master2018.flink.records.AccidentRecord;
+import master2018.flink.records.CarRecord;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
@@ -28,26 +30,23 @@ public class AccidentStream implements Serializable {
             public boolean filter(CarRecord value) throws Exception {
                 return value.getSpd() == 0;
             }
-        }).setParallelism(1).keyBy(1,3,4).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
+        }).keyBy(1,3,4,6).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
             AccidentRecord accidentRecord = new AccidentRecord();
 
             @Override
             public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) {
                 short count = 0;
-                CarRecord first = null;
+                CarRecord f = input.iterator().next();
                 for (CarRecord cr : input) {
                     count++;
-                    if (count == 1) {
-                        first = cr;
-                    }
                     if (count == 4) {
-                        accidentRecord.load(first.getTime(), cr.getTime(), first.getVid(), first.getXway(), first.getSeg(), first.getDir(), first.getPos());
+                        accidentRecord.load(f.getTime(), cr.getTime(), cr.getVid(), cr.getXway(), cr.getSeg(), cr.getDir(), cr.getPos());
                         out.collect(accidentRecord);
                     }
                 }
             }
         });
 
-        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        out.writeAsCsv(outputFilePath, FileSystem.WriteMode.OVERWRITE).setParallelism(1).name("Accident Stream");
     }
 }
