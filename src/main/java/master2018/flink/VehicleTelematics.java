@@ -1,7 +1,7 @@
 package master2018.flink;
 
-import master2018.flink.records.CarRecord;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -22,20 +22,26 @@ public class VehicleTelematics {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         DataStreamSource<String> input = env.readTextFile(inputPath).setParallelism(1);
-        DataStream<CarRecord> carRecordDataStream = input.map(new MapFunction<String, CarRecord>() {
-            CarRecord carRecord = new CarRecord();
+        DataStream<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>> carRecordDataStream = input.map(new MapFunction<String, Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>>() {
+            Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer> carRecord = new Tuple7<>();
 
             @Override
-            public CarRecord map(String value) {
+            public Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer> map(String value) {
                 String[] arr = value.split(",");
-                carRecord.load(arr);
+                carRecord.f0 = Integer.parseInt(arr[0]);
+                carRecord.f1 = Integer.parseInt(arr[1]);
+                carRecord.f2 = Short.parseShort(arr[2]);
+                carRecord.f3 = Integer.parseInt(arr[3]);
+                carRecord.f4 = Short.parseShort(arr[5]);
+                carRecord.f5 = Short.parseShort(arr[6]);
+                carRecord.f6 = Integer.parseInt(arr[7]);
                 return carRecord;
             }
         }).setParallelism(1);
 
-        new SpeedStream(carRecordDataStream, 90, outputFile1);
-        new AvgSpeedStream(carRecordDataStream, 60, 52, 56, outputFile2);
         new AccidentStream(carRecordDataStream, outputFile3);
+        new AvgSpeedStream(carRecordDataStream, 60, 52, 56, outputFile2);
+        new SpeedStream(carRecordDataStream, 90, outputFile1);
 
         try {
             env.execute("VehicleTelematics");

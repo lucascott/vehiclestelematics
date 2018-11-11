@@ -1,9 +1,8 @@
 package master2018.flink;
 
-import master2018.flink.records.AccidentRecord;
-import master2018.flink.records.CarRecord;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -14,10 +13,10 @@ import org.apache.flink.util.Collector;
 import java.io.Serializable;
 
 public class AccidentStream implements Serializable {
-    private final transient DataStream<CarRecord> in;
+    private final transient DataStream<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>> in;
     private final String outputFilePath;
 
-    public AccidentStream(DataStream<CarRecord> carRecordDataStream, String outputFile3) {
+    public AccidentStream(DataStream<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>> carRecordDataStream, String outputFile3) {
         this.in = carRecordDataStream;
         this.outputFilePath = outputFile3;
 
@@ -25,22 +24,32 @@ public class AccidentStream implements Serializable {
     }
 
     private void run() {
-        SingleOutputStreamOperator<AccidentRecord> out = in.filter(new FilterFunction<CarRecord>() {
+        SingleOutputStreamOperator<Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer>> out = in.filter(new FilterFunction<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>>() {
             @Override
-            public boolean filter(CarRecord value) throws Exception {
-                return value.getSpd() == 0;
+            public boolean filter(Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer> value) throws Exception {
+                return value.f2 == 0;
             }
-        }).keyBy(1,3,4,6).countWindow(4,1).apply(new WindowFunction<CarRecord, AccidentRecord, Tuple, GlobalWindow>() {
-            AccidentRecord accidentRecord = new AccidentRecord();
+        }).setParallelism(1).keyBy(1,3,4,6).countWindow(4,1).apply(new WindowFunction<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>, Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer>, Tuple, GlobalWindow>() {
+            Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer> accidentRecord = new Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer>();
 
             @Override
-            public void apply(Tuple tuple, GlobalWindow window, Iterable<CarRecord> input, Collector<AccidentRecord> out) {
+            public void apply(Tuple tuple, GlobalWindow window, Iterable<Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer>> input, Collector<Tuple7<Integer, Integer, Integer, Integer, Short, Short, Integer>> out) {
                 short count = 0;
-                CarRecord f = input.iterator().next();
-                for (CarRecord cr : input) {
+                Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer> f = input.iterator().next();
+                for (Tuple7<Integer, Integer, Short, Integer, Short, Short, Integer> cr : input) {
                     count++;
                     if (count == 4) {
-                        accidentRecord.load(f.getTime(), cr.getTime(), cr.getVid(), cr.getXway(), cr.getSeg(), cr.getDir(), cr.getPos());
+                        // Time, VID, Spd, XWay, Lane, Dir, Seg, Pos
+                        //  0     1    2    3           4    5    6
+                        //accidentRecord.load(f.getTime(), cr.getTime(), cr.getVid(), cr.getXway(), cr.getSeg(), cr.getDir(), cr.getPos());
+                        accidentRecord.f0 = f.f0;
+                        accidentRecord.f1 = cr.f0;
+                        accidentRecord.f2 = cr.f1;
+                        accidentRecord.f3 = cr.f3;
+                        accidentRecord.f4 = cr.f5;
+                        accidentRecord.f5 = cr.f4;
+                        accidentRecord.f6 = cr.f6;
+
                         out.collect(accidentRecord);
                     }
                 }
